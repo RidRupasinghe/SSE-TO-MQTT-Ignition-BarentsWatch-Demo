@@ -4,13 +4,13 @@
   "restricted": false,
   "overridable": true,
   "files": [
-    "props.json"
+    "data.bin"
   ],
   "attributes": {
-    "lastModificationSignature": "1a0acf4e01ebefa714bb6ffe3aa7e36af16acaf9086a2a43c38f1eab28eff136",
+    "lastModificationSignature": "587b690c90f7c2d95496fc026303b958a3bd712145adbd1f82d3072cba1d733b",
     "lastModification": {
       "actor": "Rid",
-      "timestamp": "2026-10-04T22:14:22Z"
+      "timestamp": "2026-10-04T22:10:48Z"
     }
   }
 }

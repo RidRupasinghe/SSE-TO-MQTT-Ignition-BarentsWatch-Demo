@@ -68,6 +68,7 @@
     "geolocation": {},
     "locale": "en-GB",
     "offline": {},
+    "theme": "dark",
     "timeZoneId": "Europe/Stockholm"
   }
 }

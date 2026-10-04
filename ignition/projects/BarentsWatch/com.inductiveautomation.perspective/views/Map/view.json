@@ -1,7 +1,12 @@
 {
   "custom": {},
   "params": {},
-  "props": {},
+  "props": {
+    "defaultSize": {
+      "height": "100%",
+      "width": "100%"
+    }
+  },
   "root": {
     "children": [
       {
@@ -9,8 +14,36 @@
           "name": "Map"
         },
         "position": {
-          "height": 800,
-          "width": 800
+          "height": "100%",
+          "width": "100%"
+        },
+        "propConfig": {
+          "custom.vessales": {
+            "binding": {
+              "config": {
+                "expression": "now(10000)"
+              },
+              "transforms": [
+                {
+                  "code": "    import system\n    SOURCE \u003d \"[MQTT Engine]AIS/ais\"\n\n    nodes \u003d system.tag.browse(\n        SOURCE,\n        {\"recursive\": True, \"tagType\": \"AtomicTag\"}\n    ).getResults()\n\n    paths \u003d sorted(unicode(node[\"fullPath\"]) for node in nodes)\n\n    if not paths:\n        return []\n\n    readings \u003d system.tag.readBlocking(paths, 5000)\n    vessels \u003d {}\n\n    for path, reading in zip(paths, readings):\n        # Structure: route / vessel folder / field\n        relativePath \u003d path[len(SOURCE) + 1:]\n        parts \u003d relativePath.split(\"/\")\n\n        if len(parts) !\u003d 3:\n            continue\n\n        route, folderId, field \u003d parts\n        key \u003d (route, folderId)\n\n        if key not in vessels:\n            vessels[key] \u003d {\n                \"route\": route,\n                \"folderId\": folderId,\n                \"tagPath\": SOURCE + \"/\" + route + \"/\" + folderId\n            }\n\n        vessels[key][field] \u003d (\n            reading.value if reading.quality.isGood() else None\n        )\n\n    return [vessels[key] for key in sorted(vessels)]",
+                  "type": "script"
+                },
+                {
+                  "code": "\n    from java.time import Instant, OffsetDateTime\n\n    if not quality.isGood() or value is None:\n        return []\n\n    nowMillis \u003d Instant.now().toEpochMilli()\n    timeoutSeconds \u003d 300\n    markers \u003d []\n\n    for vessel in value:\n        try:\n            positionMillis \u003d OffsetDateTime.parse(\n                unicode(vessel[\"msgtime\"])\n            ).toInstant().toEpochMilli()\n\n            ageSeconds \u003d (nowMillis - positionMillis) / 1000.0\n\n            if ageSeconds \u003c 0 or ageSeconds \u003e timeoutSeconds:\n                continue\n\n            latitude \u003d float(vessel[\"latitude\"])\n            longitude \u003d float(vessel[\"longitude\"])\n\n            if not (-90 \u003c\u003d latitude \u003c\u003d 90):\n                continue\n            if not (-180 \u003c\u003d longitude \u003c\u003d 180):\n                continue\n\n            if vessel[\"mmsi\"] is None:\n                continue\n\n            mmsi \u003d unicode(vessel[\"mmsi\"])\n            route \u003d unicode(vessel[\"route\"])\n            shipName \u003d unicode(vessel[\"name\"] or mmsi)\n\n            # Prefer heading; fall back to course when unavailable.\n            heading \u003d vessel.get(\"trueHeading\")\n            if heading is None or not (0 \u003c\u003d float(heading) \u003c 360):\n                heading \u003d vessel.get(\"courseOverGround\")\n\n            rotation \u003d 0\n            if heading is not None and 0 \u003c\u003d float(heading) \u003c 360:\n                rotation \u003d float(heading)\n\n            # Preserve all vessel fields for events and vessel details.\n            properties \u003d {}\n            for field in vessel:\n                properties[unicode(field)] \u003d vessel[field]\n\n            markers.append({\n                \"name\": u\"%s:%s\" % (route, mmsi),\n                \"properties\": properties,\n                \"enabled\": True,\n                \"lat\": latitude,\n                \"lng\": longitude,\n                \"opacity\": 1,\n                \"icon\": {\n                    \"path\": \"material/navigation\",\n                    \"color\": \"#4190F7\",\n                    \"rotate\": rotation,\n                    \"size\": {\n                        \"width\": 36,\n                        \"height\": 36\n                    },\n                    \"style\": {\n                        \"classes\": \"\"\n                    }\n                },\n                \"event\": {\n                    \"stopPropagation\": False\n                },\n                \"tooltip\": {\n                    \"content\": {\n                        \"text\": shipName\n                    },\n                    \"direction\": \"auto\",\n                    \"permanent\": False,\n                    \"sticky\": False,\n                    \"opacity\": 1\n                },\n                \"popup\": {\n                    \"enabled\": False,\n                    \"content\": {\n                        \"text\": \"\",\n                        \"view\": {\n                            \"path\": \"\",\n                            \"params\": {}\n                        }\n                    },\n                    \"width\": {\n                        \"max\": 300,\n                        \"min\": 50\n                    },\n                    \"height\": {\n                        \"max\": None\n                    },\n                    \"pan\": {\n                        \"auto\": True\n                    },\n                    \"closeButton\": True,\n                    \"autoClose\": True,\n                    \"closeOnEscapeKey\": True,\n                    \"closeOnClick\": None\n                }\n            })\n\n        except Exception:\n            # Omit vessels with missing or invalid position data.\n            continue\n\n    return markers",
+                  "type": "script"
+                }
+              ],
+              "type": "expr"
+            }
+          },
+          "props.layers.ui.marker": {
+            "binding": {
+              "config": {
+                "path": "this.custom.vessales"
+              },
+              "type": "property"
+            }
+          }
         },
         "props": {
           "init": {
@@ -69,7 +102,11 @@
                   "urlTemplateParams": {}
                 }
               ]
-            }
+            },
+            "ui": {}
+          },
+          "style": {
+            "classes": "shipMap"
           }
         },
         "type": "ia.display.map"

@@ -1,0 +1,5 @@
+/* Direct stylesheet authoring is an advanced feature. Knowledge of CSS required.*/
+
+.psc-shipMap .map-marker-shadow {
+    display: none !important;
+}
