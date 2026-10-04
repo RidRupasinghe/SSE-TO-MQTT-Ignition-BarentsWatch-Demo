@@ -1,6 +1,6 @@
 # Working in this repository
 
-Read README.md and docs/architecture.md before changing behavior. The application is a standalone SSE-to-MQTT runner in `bridge`. Preserve its package lockfile. Docker Compose also provides a Mosquitto broker.
+Read README.md and docs/architecture.md before changing behavior. The application is a standalone SSE-to-MQTT runner in `bridge`. Preserve its package lockfile. Docker Compose also provides a Mosquitto broker and an Ignition Gateway.
 
 ## Development rules
 
@@ -10,6 +10,7 @@ Read README.md and docs/architecture.md before changing behavior. The applicatio
 - Preserve `bridge/config/connections.json` and existing `bridge/.env` values. `.env` stays ignored and no `.env.example` is used. Never print credentials or expose them in fixtures, logs or docs.
 - Starting the bridge intentionally connects to live services. Routine checks must stay offline; do not use real credentials for verification unless requested. Use local fixtures or mocks for networking tests.
 - The CLI reads `.env` from its working directory. Root startup scripts use `--prefix bridge` to select that directory. `CONNECTIONS_CONFIG` selects the JSON file; CLI `--config` overrides it.
+- Ignition project resources live in `ignition/projects`, bind-mounted to `/usr/local/bin/ignition/data/projects`. Preserve this mount so Designer changes and the ship-map project remain outside the image and container writable layer. Gateway runtime state belongs in the `ignition-data` named volume.
 - Keep changes focused and follow existing style. Update docs for changed commands/configuration. Run `npm run check` before handoff and report limitations accurately.
 - Do not commit, push, deploy or contact live services unless requested.
 

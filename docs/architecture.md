@@ -19,3 +19,11 @@ The bridge has its own committed lockfile. Root setup installs its dependencies;
 Root `compose.yaml` runs the bridge and Mosquitto 2.0.22. The bridge image installs the locked package on Node 24 Alpine and runs its CLI directly as user `node`. Build context excludes credentials; Compose supplies `.env` at runtime and overrides the broker URL to `mqtt://mqtt:1883`, MQTT credentials to empty, and config path to `/app/config/connections.json`. The config directory is mounted read-only.
 
 Mosquitto uses an anonymous listener inside the Compose network, a localhost-only host port 1884 (configurable through `MQTT_HOST_PORT`), stdout logs and a named persistence volume. An MQTT publish healthcheck gates bridge startup. Both containers restart unless stopped; the bridge receives signals through Docker init with a 20-second shutdown window.
+
+Authentication update: Mosquitto now rejects anonymous clients. Both services read `MQTT_USERNAME` and `MQTT_PASSWORD` from `bridge/.env`. The broker entrypoint creates a hashed, temporary password file at container startup, and the authenticated healthcheck gates bridge startup. The earlier anonymous-listener description is historical.
+
+## Ignition Gateway
+
+Compose runs Ignition 8.3.9 on host ports 9088 and 9043. The `ignition-data` named volume holds Gateway state and installed modules. The host directory `ignition/projects` overlays the Gateway projects directory, keeping Perspective map resources outside the image and container writable layer while allowing Designer saves.
+
+Ignition depends on the healthy broker for startup ordering. MQTT Engine must be installed and configured inside the Gateway to connect to `tcp://mqtt:1883` using the shared broker credentials. A custom JSON namespace converts the bridge's non-Sparkplug AIS topics and payloads into tags for visualization.

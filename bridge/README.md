@@ -166,3 +166,5 @@ For ordinary local development, keep `OBSERVE_ENABLED=false` and leave both valu
 ## Docker Compose
 
 From the repository root, `docker compose up -d --build` starts this runner and a Mosquitto broker. The container uses `mqtt://mqtt:1883`, reads the existing BarentsWatch settings from `.env`, clears the external MQTT credentials for the anonymous local broker, and mounts `config` read-only. `.env` values remain unchanged and are excluded from the image. See the root README for logs, subscriptions and shutdown commands.
+
+Authentication update: the Compose Mosquitto broker now requires the existing `MQTT_USERNAME` and `MQTT_PASSWORD` from `.env`. The bridge uses the same credentials; anonymous connections are rejected. The earlier description of cleared credentials and an anonymous local broker is historical.

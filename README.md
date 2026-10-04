@@ -92,3 +92,22 @@ docker compose exec mqtt mosquitto_sub -h localhost -t '#' -v
 Stop the stack with `docker compose down`. Broker data remains in its volume. To rebuild after dependency changes, rerun `docker compose up -d --build`. After editing `.env`, recreate the bridge with `docker compose up -d --force-recreate bridge`. Do not run the native bridge simultaneously unless duplicate publications are intended.
 
 Validate Compose without starting services using `docker compose config --quiet`. Avoid printing the resolved Compose configuration because it includes environment credentials.
+
+### MQTT broker authentication
+
+The Compose broker requires the `MQTT_USERNAME` and `MQTT_PASSWORD` already stored in `bridge/.env`. On startup, the broker hashes the password into a temporary password file inside its container; the plaintext password is not written to the repository or Docker image. Anonymous MQTT connections are rejected. The bridge receives the same credentials through its environment and authenticates automatically.
+
+Clients connecting to `mqtt://localhost:1883` must now supply those credentials. After changing either value in `bridge/.env`, recreate both services with `docker compose up -d --build --force-recreate` so the broker password and bridge connection stay synchronized.
+
+## Ignition SCADA
+
+The Compose stack includes Ignition 8.3.9 at `http://localhost:9088` (HTTPS port `9043`). Starting this service with `ACCEPT_IGNITION_EULA=Y` accepts the Ignition license. Complete the initial Gateway commissioning in the browser.
+
+Ignition uses two mounts:
+
+- `ignition-data` stores Gateway runtime state, installed modules, configuration, licensing data, and logs.
+- `./ignition/projects` is bind-mounted at `/usr/local/bin/ignition/data/projects`. Projects saved from the Designer appear directly in this repository folder and remain available after the container is recreated.
+
+Install MQTT Engine in the Gateway and configure its third-party MQTT server as `tcp://mqtt:1883`, using `MQTT_USERNAME` and `MQTT_PASSWORD` from `bridge/.env`. For the bridge's raw AIS JSON, create a custom namespace for the configured MQTT base topic followed by `/#` and enable JSON payload parsing. The resulting tags can be used in a Perspective map project to display vessel movement.
+
+Use `docker compose up -d --build` to run the full stack. Removing containers with `docker compose down` preserves both the named Gateway data volume and host project files. Avoid `docker compose down -v` unless you intend to erase Gateway runtime state.
