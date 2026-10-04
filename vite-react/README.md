@@ -76,3 +76,12 @@ export default defineConfig([
 ])
 
 ```
+
+
+## Project-specific development notes
+
+See the [root README](../README.md) for combined setup and checks, and [architecture](../docs/architecture.md) for current boundaries.
+
+From this directory: `npm ci`, then `npm run dev`. Vite prints the local URL. `npm run check` runs lint and the production build, including TypeScript checks. `npm run preview` serves an existing production build locally.
+
+The screen is the Vite starter counter. React Compiler is enabled. There is no backend client, proxy, router or test runner yet. Add feature components, API access and interaction tests with the first agreed UI feature. Browser environment values must never contain server secrets.

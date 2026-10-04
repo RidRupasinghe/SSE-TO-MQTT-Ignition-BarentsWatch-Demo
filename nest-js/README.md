@@ -116,3 +116,30 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 ## License
 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+
+
+## Project-specific development notes
+
+Setup update: use the existing local `.env` directly. `.env.example` has been deleted, so skip the earlier copy instruction retained below. For a fresh checkout, create `.env` with `PORT=3000`, `BRIDGE_ENABLED=false` and `OBSERVE_ENABLED=false`; add credentials only when enabling integrations.
+
+See the [root README](../README.md) for setup, configuration and combined checks, and [architecture](../docs/architecture.md) for the current design.
+
+From this directory: `npm ci`, copy `.env.example` to `.env`, then `npm run start:dev`. Default startup disables external integrations. `GET /` returns `Hello World!` on port 3000.
+
+`npm run check` runs typecheck, lint, unit/e2e tests and build. `npm run test:watch` supports focused development. Tests explicitly disable live integrations. `npm run build` followed by `npm run start:prod` runs the compiled ESM entrypoint.
+
+Enable AIS or telemetry only after supplying the backend environment values described in the root README. Run backend commands with this directory as the working directory so `.env` and connection paths resolve correctly.
+
+### Observe credentials in this project
+
+`OBSERVE_APP_KEY` and `OBSERVE_APP_SECRET` are credentials issued by NestJS Observe for sending backend telemetry (traces, logs, metrics and errors) to its collector. The agent sends both with telemetry ingestion requests. They are separate from AIS OAuth credentials and MQTT credentials.
+
+Create a service in the [NestJS Observe dashboard](https://observe.nestjs.com) to obtain them. The installed Observe package documentation says the secret is displayed only once; save it securely. Both values belong in the backend environment or ignored `nest-js/.env`, never in React or committed source.
+
+```dotenv
+OBSERVE_ENABLED=true
+OBSERVE_APP_KEY=your-issued-app-key
+OBSERVE_APP_SECRET=your-issued-app-secret
+```
+
+For ordinary local development, keep `OBSERVE_ENABLED=false` and leave both values empty. The earlier template observability section describes setup in source; this project's current implementation reads the credentials from environment variables and enables telemetry only when explicitly requested.

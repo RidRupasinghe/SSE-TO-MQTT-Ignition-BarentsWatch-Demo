@@ -1,4 +1,9 @@
-import { Injectable, Logger, OnApplicationShutdown, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnApplicationShutdown,
+  OnModuleInit,
+} from '@nestjs/common';
 import {
   BearerTokenProvider,
   BodyType,
@@ -20,6 +25,14 @@ export class BridgeService implements OnModuleInit, OnApplicationShutdown {
   private bridge?: SseToMqttBridge;
 
   async onModuleInit() {
+    const enabled = process.env.BRIDGE_ENABLED ?? 'false';
+    if (enabled !== 'true' && enabled !== 'false') {
+      throw new Error('BRIDGE_ENABLED must be true or false');
+    }
+    if (enabled === 'false') {
+      this.logger.log('AIS-to-MQTT bridge disabled');
+      return;
+    }
     // BarentsWatch uses OAuth2 client credentials (https://id.barentswatch.no/connect/token, scope "ais")
     const tokenProvider = new BearerTokenProvider({
       url: requireEnv('AUTHENTICATION_URL'),
@@ -49,12 +62,18 @@ export class BridgeService implements OnModuleInit, OnApplicationShutdown {
         warn: (message, ...meta) => this.logger.warn(message, ...meta),
         error: (message, ...meta) => this.logger.error(message, ...meta),
       },
-      connections: loadConnectionsConfig(process.env.CONNECTIONS_CONFIG ?? 'config/connections.json'),
+      connections: loadConnectionsConfig(
+        process.env.CONNECTIONS_CONFIG ?? 'config/connections.json',
+      ),
     });
 
     // The AIS stream carries many messages per second, so per-message logs stay at debug level
-    this.bridge.on('published', (connection, topic) => this.logger.debug(`${connection} -> ${topic}`));
-    this.bridge.on('error', (error, connection) => this.logger.error(`${connection}: ${error.message}`));
+    this.bridge.on('published', (connection, topic) =>
+      this.logger.debug(`${connection} -> ${topic}`),
+    );
+    this.bridge.on('error', (error, connection) =>
+      this.logger.error(`${connection}: ${error.message}`),
+    );
 
     await this.bridge.start();
   }
