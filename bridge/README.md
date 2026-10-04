@@ -153,7 +153,7 @@ Enable AIS or telemetry only after supplying the backend environment values desc
 
 `OBSERVE_APP_KEY` and `OBSERVE_APP_SECRET` are credentials issued by NestJS Observe for sending backend telemetry (traces, logs, metrics and errors) to its collector. The agent sends both with telemetry ingestion requests. They are separate from AIS OAuth credentials and MQTT credentials.
 
-Create a service in the [NestJS Observe dashboard](https://observe.nestjs.com) to obtain them. The installed Observe package documentation says the secret is displayed only once; save it securely. Both values belong in the backend environment or ignored `nest-js/.env`, never in React or committed source.
+Create a service in the [NestJS Observe dashboard](https://observe.nestjs.com) to obtain them. The installed Observe package documentation says the secret is displayed only once; save it securely. Both values belong in the backend environment or ignored `nest-js/.env`, never in browser code or committed source.
 
 ```dotenv
 OBSERVE_ENABLED=true

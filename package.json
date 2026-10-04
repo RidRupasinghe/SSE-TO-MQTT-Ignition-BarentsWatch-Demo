@@ -5,12 +5,9 @@
     "node": ">=24 <25"
   },
   "scripts": {
-    "setup": "npm ci --prefix bridge && npm ci --prefix vite-react",
+    "setup": "npm ci --prefix bridge",
     "start": "npm start --prefix bridge",
     "start:bridge": "npm start --prefix bridge",
-    "dev:web": "npm run dev --prefix vite-react",
-    "build": "npm run build --prefix vite-react",
-    "lint": "npm run lint --prefix vite-react",
-    "check": "npm run check --prefix bridge && npm run check --prefix vite-react"
+    "check": "npm run check --prefix bridge"
   }
 }

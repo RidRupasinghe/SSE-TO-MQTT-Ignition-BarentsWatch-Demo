@@ -16,15 +16,15 @@ Required values: `STREAMING_ENDPOINT`, `MQTT_BROKER_URL`, `MQTT_TOPIC`; BarentsW
 
 Old `PORT`, `BRIDGE_ENABLED` and `OBSERVE_*` settings may remain in the preserved `.env`; the CLI ignores them. `npm start` always runs the bridge. No Observe credentials are needed.
 
-`npm run check` validates the saved connection file and CLI availability without loading credentials or connecting to services, then runs frontend lint and build/typecheck. `npm run build` and `npm run lint` apply to React only. React remains independent and starts with `npm run dev:web`.
+`npm run check` validates the saved connection file and CLI availability without loading credentials or connecting to services. `npm run setup` installs only the bridge dependencies. No application build step is needed.
 
 ### Historical foundation notes
 
 The README content below is preserved for reference. Its NestJS, HTTP, Observe, `dev:api`, backend test/build and `.env.example` instructions are superseded by the standalone setup above.
 
-# NestJS + React learning project
+# Historical NestJS learning project
 
-The NestJS backend contains an optional AIS SSE-to-MQTT bridge. React currently shows the Vite starter screen and does not call the backend. This repository provides a local foundation for continued AI-assisted development.
+The NestJS backend contains an optional AIS SSE-to-MQTT bridge. This repository provides a local foundation for continued AI-assisted development.
 
 ## Start locally
 
@@ -37,14 +37,13 @@ npm run setup
 cp nest-js/.env.example nest-js/.env
 ```
 
-Run these in separate terminals:
+Historical server command:
 
 ```sh
 npm run dev:api
-npm run dev:web
 ```
 
-The backend serves `GET http://localhost:3000/` with `Hello World!`. Vite prints its local URL (normally `http://localhost:5173`). Default startup needs no live integrations. The apps retain separate lockfiles; there are no root dependencies to install.
+The backend serves `GET http://localhost:3000/` with `Hello World!`. Default startup needs no live integrations. The bridge retains its lockfile; there are no root dependencies to install.
 
 ## Verify changes
 
@@ -52,7 +51,7 @@ The backend serves `GET http://localhost:3000/` with `Hello World!`. Vite prints
 npm run check
 ```
 
-This runs backend typecheck, lint, unit tests, HTTP e2e tests and build, plus frontend lint and build/typecheck. Tests disable bridge and telemetry even if your shell enables them. There is no frontend test runner yet. Root `build`, `lint` and `test` (backend tests) commands are also available.
+This runs backend typecheck, lint, unit tests, HTTP e2e tests and build. Tests disable bridge and telemetry even if your shell enables them. Root `build`, `lint` and `test` (backend tests) commands are also available.
 
 For the compiled backend: `npm run build --prefix nest-js`, then `npm run start:prod --prefix nest-js`.
 
@@ -62,7 +61,7 @@ In `nest-js/.env`, set `BRIDGE_ENABLED=true` and supply `AUTHENTICATION_URL`, `C
 
 Bridge startup validates required values and starts the external clients; errors can prevent HTTP startup. Shutdown hooks stop the bridge. A working HTTP endpoint does not prove stream or broker health.
 
-Telemetry is separately opt-in: set `OBSERVE_ENABLED=true`, `OBSERVE_APP_KEY` and `OBSERVE_APP_SECRET`. Process environment variables take precedence over `.env`. Only the backend entrypoint loads `.env`; tests and module imports do not. Do not commit `.env` or put credentials in the frontend.
+Telemetry is separately opt-in: set `OBSERVE_ENABLED=true`, `OBSERVE_APP_KEY` and `OBSERVE_APP_SECRET`. Process environment variables take precedence over `.env`. Only the backend entrypoint loads `.env`; tests and module imports do not. Do not commit `.env` or expose credentials.
 
 ## Continue with AI assistance
 

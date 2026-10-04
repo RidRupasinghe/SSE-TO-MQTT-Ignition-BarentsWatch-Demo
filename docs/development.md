@@ -5,5 +5,3 @@
 3. Change saved connection filters or topics only for explicit requirements. Preserve existing credentials and do not print `.env` values.
 4. Run `npm run check` for offline validation. Test networking changes with local SSE/OAuth and MQTT fixtures rather than live BarentsWatch credentials.
 5. Update documentation and report check results. Bridge startup is live (`npm start`); no NestJS server, telemetry or build step is needed.
-
-The React starter is independent. Define a concrete UI and browser data path before adding features; introduce frontend behavior tests with the first functional UI change.

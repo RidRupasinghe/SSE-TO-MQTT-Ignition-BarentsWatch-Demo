@@ -10,13 +10,9 @@ The previous environment file and connection JSON were moved byte for byte to `b
 
 `npm start` deliberately starts live streaming. Offline checks only validate the saved connection definitions and CLI availability. The runner has no compile step, application unit tests or HTTP e2e tests because it delegates behavior to the package.
 
-## Frontend
-
-React 19, Vite 8 and TypeScript 6 with React Compiler remain unchanged. The screen is the Vite starter counter; there is no API client, domain UI or frontend test runner. There is no server endpoint for React to call and no browser path from MQTT yet.
-
 ## Repository tools
 
-Independent npm projects retain separate lockfiles. Root setup installs both; root check validates bridge configuration/CLI, then frontend lint and build/typecheck. Root build/lint apply to React only.
+The bridge has its own committed lockfile. Root setup installs its dependencies; root check validates connection configuration and CLI availability offline. No build step is needed.
 
 ## Containers
 
