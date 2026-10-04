@@ -1,23 +1,19 @@
 # Working in this repository
 
-Read README.md and docs/architecture.md before changing behavior. This local learning repository has two independent npm projects: NestJS in `nest-js` and React/Vite in `vite-react`. Root scripts orchestrate them; preserve separate lockfiles. Do not migrate package managers or introduce workspaces without a task requiring it.
+Read README.md and docs/architecture.md before changing behavior. There are two independent npm projects: a standalone SSE-to-MQTT runner in `bridge` and React/Vite in `vite-react`. Preserve their separate lockfiles.
 
 ## Development rules
 
-- Use Node 24 and npm. Run `npm run setup` when dependencies need installing; use committed lockfiles.
-- Keep changes focused on the requested feature. Follow each app's existing style; do not reformat unrelated code.
-- Preserve existing README content. Add new information without removing or replacing existing sections unless the user explicitly requests it.
-- Backend uses NodeNext ESM, explicit `.js` suffixes on relative imports, Nest dependency injection and lifecycle hooks. Put new domain behavior in feature modules; controllers handle HTTP and services handle domain work.
-- Frontend uses functional components, TypeScript and React Compiler. When introduced, keep requests in feature API modules and model loading, error and empty states. Avoid speculative routing, state libraries or manual memoization.
-- External integrations are opt-in. Default development and checks must work without credentials or network services. Mock SSE/MQTT clients in tests; never enable live integrations for routine checks.
-- Secrets belong in ignored `.env` files or the process environment. This project uses `nest-js/.env` directly and has no `.env.example`; preserve existing values when adding missing settings. Document configuration names and defaults without exposing secrets. Never expose server credentials through `VITE_*`, browser code, fixtures, logs or docs.
-- Keep `GET /` returning `Hello World!` until explicitly asked to change that contract. React currently has no backend API client; do not assume integration.
-- Add meaningful tests for behavior changes where test infrastructure exists. The frontend currently has no test runner; report missing coverage honestly.
-- Run `npm run check` at the root before handoff. It checks backend types, lint, unit/e2e tests and build, then frontend lint and build/typecheck. Report failures and unrun checks accurately.
-- Update setup and architecture docs when behavior changes. Finish with changes, verification and limitations. Do not commit, push, deploy or contact external services unless requested.
+- Use Node 24 and npm; `npm run setup` installs from committed lockfiles.
+- Keep the bridge minimal. It runs the `sse-to-mqtt-node` package CLI directly; do not add NestJS, an HTTP server, telemetry, compilation or a custom streaming implementation without an explicit requirement.
+- Preserve existing README content; add new information without removing sections unless explicitly requested. Clearly mark historical instructions when behavior changes.
+- Preserve `bridge/config/connections.json` and existing `bridge/.env` values. `.env` stays ignored and no `.env.example` is used. Never print credentials or expose them in frontend code, fixtures, logs or docs.
+- Starting the bridge intentionally connects to live services. Routine checks must stay offline; do not use real credentials for verification unless requested. Use local fixtures or mocks for networking tests.
+- The CLI reads `.env` from its working directory. Root startup scripts use `--prefix bridge` to select that directory. `CONNECTIONS_CONFIG` selects the JSON file; CLI `--config` overrides it.
+- React uses functional components, TypeScript and React Compiler. It has no bridge API or test runner; do not assume a connection or introduce speculative state/routing libraries.
+- Keep changes focused and follow existing style. Update docs for changed commands/configuration. Run `npm run check` before handoff and report limitations accurately.
+- Do not commit, push, deploy or contact live services unless requested.
 
 ## Commands
 
-Run `npm run dev:api` and `npm run dev:web` in separate terminals. Root `build`, `lint`, `test` and `check` scripts orchestrate checks. Scoped commands use `npm run <script> --prefix nest-js` or `--prefix vite-react`.
-
-Use docs/development.md when planning the next feature.
+`npm start` or `npm run start:bridge` runs the bridge. `npm run dev:web` runs Vite. `npm run check` validates bridge config/CLI availability and frontend lint/build/types. Root `build` and `lint` apply to React only; the bridge needs no build. Scoped commands use `--prefix bridge` or `--prefix vite-react`.

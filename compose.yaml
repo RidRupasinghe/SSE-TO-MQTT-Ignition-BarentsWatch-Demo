@@ -1,0 +1,36 @@
+services:
+  mqtt:
+    image: eclipse-mosquitto:2.0.22
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${MQTT_HOST_PORT:-1883}:1883"
+    volumes:
+      - ./mqtt/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - mqtt-data:/mosquitto/data
+    healthcheck:
+      test: ["CMD", "mosquitto_pub", "-h", "127.0.0.1", "-t", "_healthcheck", "-m", "ok", "-q", "1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  bridge:
+    build: ./bridge
+    restart: unless-stopped
+    init: true
+    env_file:
+      - ./bridge/.env
+    environment:
+      MQTT_BROKER_URL: mqtt://mqtt:1883
+      MQTT_USERNAME: ""
+      MQTT_PASSWORD: ""
+      CONNECTIONS_CONFIG: /app/config/connections.json
+    volumes:
+      - ./bridge/config:/app/config:ro
+    depends_on:
+      mqtt:
+        condition: service_healthy
+    stop_grace_period: 20s
+
+volumes:
+  mqtt-data:

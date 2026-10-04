@@ -1,29 +1,25 @@
-# Current architecture and analysis
+# Current architecture
 
-## Backend
+## Standalone bridge
 
-NestJS 12, TypeScript 6 and NodeNext ESM. `main.ts` loads optional environment configuration before importing the root module, creates the HTTP app, enables shutdown hooks and listens on `PORT` (default 3000). Missing `.env` is allowed; other loading errors are surfaced.
+`bridge/package.json` runs the `sse-to-mqtt-node` CLI directly. The package is the only direct dependency; no custom application source, NestJS, Observe or HTTP listener remains. Node 24 is the repository runtime.
 
-`AppController` delegates `GET /` to `AppService`, which returns a plain string. There are no domain HTTP endpoints, authentication, database or persistence.
+The package loads `.env` from the working directory, creates an OAuth client-credentials token provider when `AUTHENTICATION_URL` is present, reads `CONNECTIONS_CONFIG`, starts SSE connections and republishes to MQTT. It owns token refresh, retries, logging and SIGINT/SIGTERM shutdown. Process environment overrides `.env`; CLI `--config` overrides the environment config path.
 
-`BridgeService` owns the lifecycle of `sse-to-mqtt-node`. With `BRIDGE_ENABLED=true`, it creates an OAuth client-credentials token provider, loads connection definitions and starts the bridge. The library implements streaming and publishing. Nest logs publications at debug level and errors at error level; shutdown stops the bridge. Connection JSON contains POST filters for two geographic polygons and the topic pattern `{name}/{imoNumber}`.
+The previous environment file and connection JSON were moved byte for byte to `bridge/.env` and `bridge/config/connections.json`. The JSON retains POST filters for Flakk–Rørvik and Moss–Horten and topic pattern `{name}/{imoNumber}`. Credentials remain local and ignored by Git. BarentsWatch requires OAuth credentials and `CLIENT_SCOPE=ais`; broker authentication is optional. Old Nest-only variables in `.env` are ignored.
 
-Observe registration and instrumentation require `OBSERVE_ENABLED=true` and both credentials. Bridge and telemetry default to disabled.
+`npm start` deliberately starts live streaming. Offline checks only validate the saved connection definitions and CLI availability. The runner has no compile step, application unit tests or HTTP e2e tests because it delegates behavior to the package.
 
 ## Frontend
 
-React 19, Vite 8 and TypeScript 6, with React Compiler enabled. The screen is the starter counter. There are no routes, API layer, domain UI, auth or browser tests. No proxy or CORS configuration links React to NestJS, and no path delivers MQTT messages to the browser.
+React 19, Vite 8 and TypeScript 6 with React Compiler remain unchanged. The screen is the Vite starter counter; there is no API client, domain UI or frontend test runner. There is no server endpoint for React to call and no browser path from MQTT yet.
 
-## Development foundation
+## Repository tools
 
-Independent npm projects retain lockfiles and tools: backend uses Oxlint and Vitest; frontend uses ESLint. Root scripts orchestrate installation and checks without a workspace migration. Node 24 is the documented runtime.
+Independent npm projects retain separate lockfiles. Root setup installs both; root check validates bridge configuration/CLI, then frontend lint and build/typecheck. Root build/lint apply to React only.
 
-Initial inspection found both builds, both linters and the starter backend unit test passing. The original HTTP e2e test failed because initialization required live credentials. Integrations now default to disabled; tests explicitly disable them. Mocked bridge lifecycle tests cover offline mode, invalid enable flags, missing configuration and start/stop delegation.
+## Containers
 
-## Gaps and future decisions
+Root `compose.yaml` runs the bridge and Mosquitto 2.0.22. The bridge image installs the locked package on Node 24 Alpine and runs its CLI directly as user `node`. Build context excludes credentials; Compose supplies `.env` at runtime and overrides the broker URL to `mqtt://mqtt:1883`, MQTT credentials to empty, and config path to `/app/config/connections.json`. The config directory is mounted read-only.
 
-- The HTTP root is a smoke check, not integration readiness. Bridge health and operational status have no API today.
-- Required environment values are checked for presence, not full URL/config schema validity. Extend validation as domain requirements become clear.
-- Enabled bridge startup precedes the HTTP listener. Decide whether HTTP must remain available during integration failures before changing that behavior.
-- Introduce domain modules and API contracts with the first agreed product feature. Choose a browser delivery mechanism before live AIS UI work.
-- Add frontend behavior tests with the first functional UI feature. Database, auth, deployment and shared contract packages remain product decisions.
+Mosquitto uses an anonymous listener inside the Compose network, a localhost-only host port 1884 (configurable through `MQTT_HOST_PORT`), stdout logs and a named persistence volume. An MQTT publish healthcheck gates bridge startup. Both containers restart unless stopped; the bridge receives signals through Docker init with a 20-second shutdown window.

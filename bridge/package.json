@@ -1,0 +1,17 @@
+{
+  "name": "barentswatch-sse-mqtt-bridge",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Minimal BarentsWatch SSE-to-MQTT runner",
+  "type": "module",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "start": "sse-to-mqtt-node",
+    "check": "node --eval \"require('sse-to-mqtt-node').loadConnectionsConfig('config/connections.json')\" && sse-to-mqtt-node --help"
+  },
+  "dependencies": {
+    "sse-to-mqtt-node": "^0.1.1"
+  }
+}

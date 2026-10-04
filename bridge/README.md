@@ -1,3 +1,22 @@
+## Current runner: BarentsWatch SSE to MQTT
+
+This directory is now `bridge`; NestJS and its server code have been removed. The only direct dependency is `sse-to-mqtt-node`, whose CLI provides environment loading, OAuth, connection validation, SSE reconnection, MQTT publishing, logging and signal shutdown.
+
+```sh
+npm ci
+npm start
+```
+
+The existing `.env` and `config/connections.json` are preserved unchanged. `CONNECTIONS_CONFIG=config/connections.json` selects the file. The runner uses the existing BarentsWatch and broker credentials. Starting it connects to live services; stop with Ctrl+C. There is no HTTP server or build step.
+
+Set `AUTHENTICATION_URL`, `CLIENT_ID`, `CLIENT_SECRET`, `CLIENT_SCOPE=ais`, `STREAMING_ENDPOINT`, `MQTT_BROKER_URL` and `MQTT_TOPIC` in `.env`. Optional values include `MQTT_USERNAME`, `MQTT_PASSWORD` and `LOG_LEVEL` (default `info`). Process environment overrides `.env`. Old `BRIDGE_ENABLED`, `PORT` and `OBSERVE_*` values are ignored; no Observe credentials are required. Keep `.env` out of Git.
+
+`npm run check` validates the saved connection file and invokes CLI help without starting the bridge. See the [root README](../README.md) for repository commands and [architecture](../docs/architecture.md) for the current design.
+
+### Historical NestJS README
+
+All previous README content is retained below. Its NestJS, telemetry, HTTP, tests and build instructions describe the removed server and are superseded by the runner instructions above.
+
 <p align="center">
   <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
 </p>
@@ -143,3 +162,7 @@ OBSERVE_APP_SECRET=your-issued-app-secret
 ```
 
 For ordinary local development, keep `OBSERVE_ENABLED=false` and leave both values empty. The earlier template observability section describes setup in source; this project's current implementation reads the credentials from environment variables and enables telemetry only when explicitly requested.
+
+## Docker Compose
+
+From the repository root, `docker compose up -d --build` starts this runner and a Mosquitto broker. The container uses `mqtt://mqtt:1883`, reads the existing BarentsWatch settings from `.env`, clears the external MQTT credentials for the anonymous local broker, and mounts `config` read-only. `.env` values remain unchanged and are excluded from the image. See the root README for logs, subscriptions and shutdown commands.

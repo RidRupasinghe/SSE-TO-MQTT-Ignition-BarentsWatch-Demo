@@ -1,14 +1,16 @@
 {
   "name": "node-learning-foundation",
   "private": true,
-  "engines": { "node": ">=24 <25" },
+  "engines": {
+    "node": ">=24 <25"
+  },
   "scripts": {
-    "setup": "npm ci --prefix nest-js && npm ci --prefix vite-react",
-    "dev:api": "npm run start:dev --prefix nest-js",
+    "setup": "npm ci --prefix bridge && npm ci --prefix vite-react",
+    "start": "npm start --prefix bridge",
+    "start:bridge": "npm start --prefix bridge",
     "dev:web": "npm run dev --prefix vite-react",
-    "build": "npm run build --prefix nest-js && npm run build --prefix vite-react",
-    "lint": "npm run lint --prefix nest-js && npm run lint --prefix vite-react",
-    "test": "npm test --prefix nest-js && npm run test:e2e --prefix nest-js",
-    "check": "npm run check --prefix nest-js && npm run check --prefix vite-react"
+    "build": "npm run build --prefix vite-react",
+    "lint": "npm run lint --prefix vite-react",
+    "check": "npm run check --prefix bridge && npm run check --prefix vite-react"
   }
 }
