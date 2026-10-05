@@ -7,7 +7,7 @@ Read README.md and docs/architecture.md before changing behavior. The applicatio
 - Use Node 24 and npm; `npm run setup` installs from committed lockfiles.
 - Keep the bridge minimal. It runs the `sse-to-mqtt-node` package CLI directly; do not add NestJS, an HTTP server, telemetry, compilation or a custom streaming implementation without an explicit requirement.
 - Preserve existing README content; add new information without removing sections unless explicitly requested. Clearly mark historical instructions when behavior changes.
-- Preserve `bridge/config/connections.json` and existing `bridge/.env` values. `.env` stays ignored and no `.env.example` is used. Never print credentials or expose them in fixtures, logs or docs.
+- Preserve `bridge/config/connections.json` and existing `bridge/.env` values. `.env` stays ignored; `bridge/.env.example` is a sanitized setup template. Use placeholders for client IDs, secrets and MQTT credentials in the example. Never print credentials or expose them in fixtures, logs or docs.
 - Starting the bridge intentionally connects to live services. Routine checks must stay offline; do not use real credentials for verification unless requested. Use local fixtures or mocks for networking tests.
 - The CLI reads `.env` from its working directory. Root startup scripts use `--prefix bridge` to select that directory. `CONNECTIONS_CONFIG` selects the JSON file; CLI `--config` overrides it.
 - Ignition project resources live in `ignition/projects`, bind-mounted to `/usr/local/bin/ignition/data/projects`. Preserve this mount so Designer changes and the ship-map project remain outside the image and container writable layer. Gateway runtime state belongs in the `ignition-data` named volume.

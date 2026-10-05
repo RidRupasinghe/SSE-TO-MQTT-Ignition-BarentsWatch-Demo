@@ -1,170 +1,31 @@
-## Current runner: BarentsWatch SSE to MQTT
+# BarentsWatch SSE-to-MQTT runner
 
-This directory is now `bridge`; NestJS and its server code have been removed. The only direct dependency is `sse-to-mqtt-node`, whose CLI provides environment loading, OAuth, connection validation, SSE reconnection, MQTT publishing, logging and signal shutdown.
+This directory runs the `sse-to-mqtt-node` CLI directly. The package provides environment loading, OAuth token handling, connection validation, streaming reconnection, MQTT publishing, logging and signal shutdown. There is no application build step.
+
+## Setup and start
+
+Use Node 24 and npm. From this directory:
 
 ```sh
 npm ci
+# Copy only if .env does not already exist.
+cp -n .env.example .env
+# Replace credential placeholders before starting.
 npm start
 ```
 
-The existing `.env` and `config/connections.json` are preserved unchanged. `CONNECTIONS_CONFIG=config/connections.json` selects the file. The runner uses the existing BarentsWatch and broker credentials. Starting it connects to live services; stop with Ctrl+C. There is no HTTP server or build step.
+The [example](.env.example) follows the local configuration with client IDs, secrets and MQTT credentials replaced by placeholders. Keep real credentials in the ignored `.env` and preserve existing values. Follow the [BarentsWatch credential instructions](../README.md#get-barentswatch-credentials-and-ais-data) to register an AIS-client.
 
-Set `AUTHENTICATION_URL`, `CLIENT_ID`, `CLIENT_SECRET`, `CLIENT_SCOPE=ais`, `STREAMING_ENDPOINT`, `MQTT_BROKER_URL` and `MQTT_TOPIC` in `.env`. Optional values include `MQTT_USERNAME`, `MQTT_PASSWORD` and `LOG_LEVEL` (default `info`). Process environment overrides `.env`. Old `BRIDGE_ENABLED`, `PORT` and `OBSERVE_*` values are ignored; no Observe credentials are required. Keep `.env` out of Git.
+Set `AUTHENTICATION_URL`, `CLIENT_ID`, `CLIENT_SECRET`, `CLIENT_SCOPE=ais`, `STREAMING_ENDPOINT`, `MQTT_BROKER_URL` and `MQTT_TOPIC`. `CONNECTIONS_CONFIG=config/connections.json` selects the saved stream filters. Process environment values override `.env`; CLI `--config` overrides the config path. Optional CLI settings include `MQTT_USERNAME`, `MQTT_PASSWORD` and `LOG_LEVEL` (default `info`). Both MQTT credentials are required by this repository's Compose broker.
 
-`npm run check` validates the saved connection file and invokes CLI help without starting the bridge. See the [root README](../README.md) for repository commands and [architecture](../docs/architecture.md) for the current design.
+Starting the bridge connects to live services. Stop it with Ctrl+C. From the repository root, `npm start` or `npm run start:bridge` selects this working directory automatically.
 
-### Historical NestJS README
+## Offline verification
 
-All previous README content is retained below. Its NestJS, telemetry, HTTP, tests and build instructions describe the removed server and are superseded by the runner instructions above.
+`npm run check` validates `config/connections.json` and invokes CLI help without connecting to services. The committed lockfile supplies the installed dependency versions.
 
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+## Docker Compose and Ignition
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+From the repository root, `docker compose up -d --build` starts the bridge, authenticated Mosquitto broker and Ignition Gateway. The bridge container uses `mqtt://mqtt:1883`, reads credentials from `.env` and mounts `config` read-only. Native startup instead uses the broker URL in `.env`.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
-
-## Description
-
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
-
-## Project setup
-
-```bash
-$ npm install
-```
-
-## Compile and run the project
-
-```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
-```
-
-## Run tests
-
-```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
-```
-
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Observability
-
-In production applications, observability is essential for understanding how your system behaves, detecting issues early, and maintaining reliable performance.
-
-[NestJS Observe](https://observe.nestjs.com) automatically instruments your NestJS application, giving you deep visibility into your system with minimal setup:
-
-- **Distributed tracing:** Follow requests across services and understand how they flow through your system.
-- **Waterfall analysis:** Visualize request execution and identify slow operations, bottlenecks, and unexpected delays.
-- **Performance analysis:** Analyze application performance in real time and quickly pinpoint areas that need optimization.
-- **Metrics:** Track key application and infrastructure metrics to understand system health and performance trends.
-- **Logging:** Centralize and correlate logs with traces and other telemetry to make debugging easier.
-- **Error tracking:** Detect errors quickly and investigate their root causes with the surrounding context.
-- **SLA monitoring:** Track service-level objectives and identify when your application is approaching or exceeding defined thresholds.
-- **Alarms and alerts:** Set up alerts for critical errors, performance degradation, SLA violations, and other anomalies so your team can react quickly.
-
-This project is already instrumented. Create a free account at [observe.nestjs.com](https://observe.nestjs.com), add an application, and paste the generated app key and secret into the `ObserveModule.forRoot()` call in `src/app.module.ts`.
-
-The free plan needs no payment details and covers 300,000 events a month. You can also browse the [live demo](https://www.observe-demo.nestjs.com/dashboard) first - the whole dashboard over a busy service's data, with nothing to install.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Auto-instrument your application with [NestJS Observe](https://observe.nestjs.com). Distributed tracing, metrics, and logging made easy. Error tracking and performance monitoring for your NestJS applications.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
-
-
-## Project-specific development notes
-
-Setup update: use the existing local `.env` directly. `.env.example` has been deleted, so skip the earlier copy instruction retained below. For a fresh checkout, create `.env` with `PORT=3000`, `BRIDGE_ENABLED=false` and `OBSERVE_ENABLED=false`; add credentials only when enabling integrations.
-
-See the [root README](../README.md) for setup, configuration and combined checks, and [architecture](../docs/architecture.md) for the current design.
-
-From this directory: `npm ci`, copy `.env.example` to `.env`, then `npm run start:dev`. Default startup disables external integrations. `GET /` returns `Hello World!` on port 3000.
-
-`npm run check` runs typecheck, lint, unit/e2e tests and build. `npm run test:watch` supports focused development. Tests explicitly disable live integrations. `npm run build` followed by `npm run start:prod` runs the compiled ESM entrypoint.
-
-Enable AIS or telemetry only after supplying the backend environment values described in the root README. Run backend commands with this directory as the working directory so `.env` and connection paths resolve correctly.
-
-### Observe credentials in this project
-
-`OBSERVE_APP_KEY` and `OBSERVE_APP_SECRET` are credentials issued by NestJS Observe for sending backend telemetry (traces, logs, metrics and errors) to its collector. The agent sends both with telemetry ingestion requests. They are separate from AIS OAuth credentials and MQTT credentials.
-
-Create a service in the [NestJS Observe dashboard](https://observe.nestjs.com) to obtain them. The installed Observe package documentation says the secret is displayed only once; save it securely. Both values belong in the backend environment or ignored `nest-js/.env`, never in browser code or committed source.
-
-```dotenv
-OBSERVE_ENABLED=true
-OBSERVE_APP_KEY=your-issued-app-key
-OBSERVE_APP_SECRET=your-issued-app-secret
-```
-
-For ordinary local development, keep `OBSERVE_ENABLED=false` and leave both values empty. The earlier template observability section describes setup in source; this project's current implementation reads the credentials from environment variables and enables telemetry only when explicitly requested.
-
-## Docker Compose
-
-From the repository root, `docker compose up -d --build` starts this runner and a Mosquitto broker. The container uses `mqtt://mqtt:1883`, reads the existing BarentsWatch settings from `.env`, clears the external MQTT credentials for the anonymous local broker, and mounts `config` read-only. `.env` values remain unchanged and are excluded from the image. See the root README for logs, subscriptions and shutdown commands.
-
-Authentication update: the Compose Mosquitto broker now requires the existing `MQTT_USERNAME` and `MQTT_PASSWORD` from `.env`. The bridge uses the same credentials; anonymous connections are rejected. The earlier description of cleared credentials and an anonymous local broker is historical.
+See the [root README](../README.md#run-the-stack-with-docker-compose) for lifecycle and broker commands, the [Ignition guide](../ignition/README.md) for the saved map and MQTT tags, and [architecture](../docs/architecture.md) for the design.

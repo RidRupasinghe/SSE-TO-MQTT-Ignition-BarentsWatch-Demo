@@ -1,6 +1,6 @@
-## Current setup: standalone SSE-to-MQTT bridge
+# BarentsWatch AIS to MQTT and Ignition
 
-The NestJS server has been removed. The Node application is now `bridge`, a minimal npm runner for the existing `sse-to-mqtt-node` CLI. It has one direct dependency, no custom server, no HTTP listener, no TypeScript build and no telemetry integration.
+This repository streams BarentsWatch AIS vessel data to MQTT using the `sse-to-mqtt-node` CLI in `bridge`. Docker Compose also provides an authenticated Mosquitto broker and an Ignition Gateway with a saved Perspective ship-map project.
 
 ```sh
 npm run setup
@@ -10,66 +10,39 @@ npm start
 
 Starting the bridge connects to the configured live SSE source and MQTT broker. The package loads `bridge/.env` automatically, validates the connection configuration and handles SIGINT/SIGTERM shutdown. Run commands from the repository root using the scripts above, or run `npm start` inside `bridge`.
 
-The previous `.env` has been moved unchanged to `bridge/.env`; its existing credentials are preserved and it remains ignored by Git. The connection file has been moved unchanged to `bridge/config/connections.json`. `CONNECTIONS_CONFIG=config/connections.json` in `.env` selects it. A process environment value overrides `.env`. CLI `--config` overrides `CONNECTIONS_CONFIG` if passed explicitly.
+Local settings belong in the ignored `bridge/.env`. Saved stream filters and topic patterns are in `bridge/config/connections.json`. `CONNECTIONS_CONFIG=config/connections.json` in `.env` selects it. A process environment value overrides `.env`. CLI `--config` overrides `CONNECTIONS_CONFIG` if passed explicitly.
 
-Required values: `STREAMING_ENDPOINT`, `MQTT_BROKER_URL`, `MQTT_TOPIC`; BarentsWatch OAuth also needs `AUTHENTICATION_URL`, `CLIENT_ID`, `CLIENT_SECRET` and `CLIENT_SCOPE=ais`. MQTT username/password remain optional. `LOG_LEVEL` is optional (`info` by default; `debug`, `warn` and `error` are also supported). No `.env.example` is used. On a fresh checkout, create `bridge/.env` with these values and `CONNECTIONS_CONFIG=config/connections.json`.
+Required values: `STREAMING_ENDPOINT`, `MQTT_BROKER_URL`, `MQTT_TOPIC`; BarentsWatch OAuth also needs `AUTHENTICATION_URL`, `CLIENT_ID`, `CLIENT_SECRET` and `CLIENT_SCOPE=ais`. MQTT username/password are optional for the CLI, but required by this repository's Compose broker. `LOG_LEVEL` is optional (`info` by default; `debug`, `warn` and `error` are also supported). On a fresh checkout, use [bridge/.env.example](bridge/.env.example), which follows the local configuration with client IDs, secrets and MQTT credentials replaced by placeholders.
 
-Old `PORT`, `BRIDGE_ENABLED` and `OBSERVE_*` settings may remain in the preserved `.env`; the CLI ignores them. `npm start` always runs the bridge. No Observe credentials are needed.
+### Configure a fresh checkout
 
-`npm run check` validates the saved connection file and CLI availability without loading credentials or connecting to services. `npm run setup` installs only the bridge dependencies. No application build step is needed.
-
-### Historical foundation notes
-
-The README content below is preserved for reference. Its NestJS, HTTP, Observe, `dev:api`, backend test/build and `.env.example` instructions are superseded by the standalone setup above.
-
-# Historical NestJS learning project
-
-The NestJS backend contains an optional AIS SSE-to-MQTT bridge. This repository provides a local foundation for continued AI-assisted development.
-
-## Start locally
-
-Use Node 24 (`nvm use` if available) and npm. From this directory:
-
-Setup update: `nest-js/.env` now holds the local settings directly, and `.env.example` has been deleted. Run `npm run setup`; skip the historical copy command retained below. On a fresh checkout, create `nest-js/.env` with `PORT=3000`, `BRIDGE_ENABLED=false` and `OBSERVE_ENABLED=false`. Supply integration credentials only when enabling them.
+Use Node 24 and npm. From the repository root:
 
 ```sh
 npm run setup
-cp nest-js/.env.example nest-js/.env
+# Copy only if bridge/.env does not already exist; preserve existing credentials.
+cp -n bridge/.env.example bridge/.env
 ```
 
-Historical server command:
+Edit `bridge/.env` to replace the credential placeholders before starting the bridge. Set `MQTT_USERNAME` and `MQTT_PASSWORD` for your broker; Compose uses these same values for its local Mosquitto broker. Native `npm start` uses `MQTT_BROKER_URL` from `.env`; Compose overrides that URL with `mqtt://mqtt:1883`. For native use of the Compose broker, use `mqtt://localhost:1883` (or your configured host port). Keep `CONNECTIONS_CONFIG=config/connections.json` to use the existing saved filters and topic patterns.
 
-```sh
-npm run dev:api
-```
+Keep real credentials only in the ignored `bridge/.env`; the example is safe to share. `.env` loads from the bridge working directory, so root startup scripts select it with `--prefix bridge`. Shell environment values take precedence over the file.
 
-The backend serves `GET http://localhost:3000/` with `Hello World!`. Default startup needs no live integrations. The bridge retains its lockfile; there are no root dependencies to install.
+### Get BarentsWatch credentials and AIS data
 
-## Verify changes
+1. Register a BarentsWatch user or sign in at [MyPage / Min side](https://www.barentswatch.no/minside/).
+2. Register a client and choose **AIS-client** for this bridge. Use the full issued client ID for `CLIENT_ID` and the client secret you create there for `CLIENT_SECRET`. See the official [application registration and authentication guide](https://developer.barentswatch.no/docs/appreg/).
+3. Keep `CLIENT_SCOPE=ais` and `AUTHENTICATION_URL=https://id.barentswatch.no/connect/token`, as specified in the official [Live AIS API guide](https://developer.barentswatch.no/docs/AIS/live-ais-api/).
+4. Use the streaming URL in the example with the existing `bridge/config/connections.json` filters. BarentsWatch documents the combined vessel stream at `https://live.ais.barentswatch.no/v1/combined` and filtered POST requests in its [AIS request examples](https://developer.barentswatch.no/docs/AIS/examples/). The saved connection definitions control the requests and MQTT topic patterns.
+5. Run `npm run check` for offline configuration validation. When ready to connect to live services, run `npm start` for the native bridge or `docker compose up -d --build` for the full stack.
 
-```sh
-npm run check
-```
+The CLI obtains and refreshes OAuth access tokens using the client-credentials flow; you do not need to copy an access token into `.env`. BarentsWatch supplies the AIS source and OAuth credentials. MQTT broker settings are configured separately by you.
 
-This runs backend typecheck, lint, unit tests, HTTP e2e tests and build. Tests disable bridge and telemetry even if your shell enables them. Root `build`, `lint` and `test` (backend tests) commands are also available.
+`npm run check` validates the saved connection file and CLI availability without loading credentials or connecting to services. `npm run setup` installs only the bridge dependencies. No application build step is needed.
 
-For the compiled backend: `npm run build --prefix nest-js`, then `npm run start:prod --prefix nest-js`.
+## Run the stack with Docker Compose
 
-## Enable live integrations
-
-In `nest-js/.env`, set `BRIDGE_ENABLED=true` and supply `AUTHENTICATION_URL`, `CLIENT_ID`, `CLIENT_SECRET`, `STREAMING_ENDPOINT`, `MQTT_BROKER_URL` and `MQTT_TOPIC`. `CLIENT_SCOPE` defaults to `ais`; MQTT username/password are optional. `CONNECTIONS_CONFIG` defaults to `config/connections.json`, relative to the backend working directory. The provided polygons cover Flakk–Rørvik and Moss–Horten.
-
-Bridge startup validates required values and starts the external clients; errors can prevent HTTP startup. Shutdown hooks stop the bridge. A working HTTP endpoint does not prove stream or broker health.
-
-Telemetry is separately opt-in: set `OBSERVE_ENABLED=true`, `OBSERVE_APP_KEY` and `OBSERVE_APP_SECRET`. Process environment variables take precedence over `.env`. Only the backend entrypoint loads `.env`; tests and module imports do not. Do not commit `.env` or expose credentials.
-
-## Continue with AI assistance
-
-[AGENTS.md](AGENTS.md) supplies coding-agent instructions. [Architecture](docs/architecture.md) explains the current system and gaps. [Development guide](docs/development.md) provides a feature workflow and next steps. Give the assistant concrete behavior, acceptance criteria and constraints, and ask it to read these documents first.
-
-## Run the bridge and MQTT broker with Docker Compose
-
-From the repository root, with Docker running:
+From the repository root, with Docker running and `bridge/.env` configured:
 
 ```sh
 docker compose up -d --build
@@ -77,37 +50,55 @@ docker compose ps
 docker compose logs -f bridge
 ```
 
-Compose builds the Node bridge and starts a Mosquitto broker. The bridge waits for the broker healthcheck, uses `mqtt://mqtt:1883` on the Compose network, and receives the existing BarentsWatch credentials and topic from `bridge/.env`. Its local broker username/password are cleared because this development broker permits anonymous clients. These container overrides do not change `.env` or native `npm start` behavior.
+This starts the bridge, Mosquitto and Ignition. The bridge waits for the broker healthcheck, connects to `mqtt://mqtt:1883`, uses the MQTT credentials from `bridge/.env`, and mounts `bridge/config` read-only at `/app/config`. Credentials are supplied at startup and excluded from the image build context. The CLI runs as the Node image's unprivileged user with an init process and a 20-second shutdown grace period.
 
-Connection configuration is mounted read-only at `/app/config`, with `CONNECTIONS_CONFIG=/app/config/connections.json`. Credentials are supplied at container startup and excluded from the image build context. The CLI runs directly as the Node image's unprivileged user, with an init process and a 20-second shutdown grace period.
+The broker requires `MQTT_USERNAME` and `MQTT_PASSWORD`; anonymous clients are rejected. Its startup script hashes the password into a temporary password file inside the container. MQTT persistence uses the `mqtt-data` named volume, and the authenticated readiness probe publishes to `_healthcheck`.
 
-The broker is reachable from this computer at `mqtt://localhost:1884` (override with `MQTT_HOST_PORT`); its published port binds only to host loopback. Its container listener permits anonymous clients on the Compose network. MQTT persistence uses the `mqtt-data` named volume, and broker logs go to container stdout. The readiness probe publishes to `_healthcheck`; AIS messages use your existing `MQTT_TOPIC` and connection topic patterns.
+| Client location | Broker address |
+| --- | --- |
+| Native bridge or another client on this computer | `mqtt://localhost:1883` |
+| Bridge container | `mqtt://mqtt:1883` |
+| MQTT Engine inside the Ignition container | `tcp://mqtt:1883` |
 
-To watch all topics from inside the broker container:
+The host port binds only to loopback. Override it through the shell, for example `MQTT_HOST_PORT=1884 docker compose up -d --build`; `bridge/.env` does not supply Compose host-port interpolation. Container connections continue to use port 1883.
+
+To watch AIS messages from inside the broker container:
 
 ```sh
-docker compose exec mqtt mosquitto_sub -h localhost -t '#' -v
+docker compose exec mqtt sh -c 'mosquitto_sub -h localhost -u "$MQTT_USERNAME" -P "$MQTT_PASSWORD" -t "ais/#" -v'
 ```
 
-Stop the stack with `docker compose down`. Broker data remains in its volume. To rebuild after dependency changes, rerun `docker compose up -d --build`. After editing `.env`, recreate the bridge with `docker compose up -d --force-recreate bridge`. Do not run the native bridge simultaneously unless duplicate publications are intended.
+Replace `ais/#` if you change `MQTT_TOPIC`. The saved connection currently filters Kristiansand–Hirtshals and publishes under `<MQTT_TOPIC>/<connection name>/<imoNumber>`. `{name}` in the topic pattern is the connection name; the vessel name is a field in the JSON payload.
 
-Validate Compose without starting services using `docker compose config --quiet`. Avoid printing the resolved Compose configuration because it includes environment credentials.
+After editing bridge settings, recreate the bridge with `docker compose up -d --force-recreate bridge`. After changing MQTT credentials, recreate both broker and bridge with `docker compose up -d --build --force-recreate mqtt bridge` and update the MQTT Engine server credentials in the Gateway. Avoid running the native and container bridges simultaneously unless duplicate publications are intended.
 
-### MQTT broker authentication
+Stop the stack with `docker compose down`. Named volumes and host project files remain. Avoid `docker compose down -v` unless you intend to erase broker persistence and Gateway runtime state.
 
-The Compose broker requires the `MQTT_USERNAME` and `MQTT_PASSWORD` already stored in `bridge/.env`. On startup, the broker hashes the password into a temporary password file inside its container; the plaintext password is not written to the repository or Docker image. Anonymous MQTT connections are rejected. The bridge receives the same credentials through its environment and authenticates automatically.
+## Start Ignition and open the saved ship map
 
-Clients connecting to `mqtt://localhost:1883` must now supply those credentials. After changing either value in `bridge/.env`, recreate both services with `docker compose up -d --build --force-recreate` so the broker password and bridge connection stay synchronized.
+To start only the Gateway and its broker, without starting live BarentsWatch streaming:
 
-## Ignition SCADA
+```sh
+docker compose up -d --build mqtt ignition
+docker compose ps
+docker compose logs -f ignition
+```
 
-The Compose stack includes Ignition 8.3.9 at `http://localhost:9088` (HTTPS port `9043`). Starting this service with `ACCEPT_IGNITION_EULA=Y` accepts the Ignition license. Complete the initial Gateway commissioning in the browser.
+Open [the Gateway](http://localhost:9088) and complete first-run commissioning, including an administrator account. Compose runs Ignition 8.3.9, exposes HTTPS on port 9043, and sets `ACCEPT_IGNITION_EULA=Y`, accepting the Ignition license when started.
 
-Ignition uses two mounts:
+The saved project is [ignition/projects/BarentsWatch](ignition/projects/BarentsWatch). Compose mounts `ignition/projects` at `/usr/local/bin/ignition/data/projects`, so the Gateway can load the project directly and Designer saves persist in this repository. Its title is **BarentsWatch-AIS**, its Map view is assigned to `/`, and the Perspective session URL is [the BarentsWatch map](http://localhost:9088/data/perspective/client/BarentsWatch/).
 
-- `ignition-data` stores Gateway runtime state, installed modules, configuration, licensing data, and logs.
-- `./ignition/projects` is bind-mounted at `/usr/local/bin/ignition/data/projects`. Projects saved from the Designer appear directly in this repository folder and remain available after the container is recreated.
+Follow the [Ignition setup guide](ignition/README.md) to install MQTT Engine, connect it to `tcp://mqtt:1883` with the MQTT credentials in `bridge/.env`, and configure JSON tags under `[MQTT Engine]AIS/ais`. Then launch Designer from the Gateway, open `BarentsWatch`, and select the **MQTT Engine** provider in the Tag Browser. The saved Map view reads these tags automatically.
 
-Install MQTT Engine in the Gateway and configure its third-party MQTT server as `tcp://mqtt:1883`, using `MQTT_USERNAME` and `MQTT_PASSWORD` from `bridge/.env`. For the bridge's raw AIS JSON, create a custom namespace for the configured MQTT base topic followed by `/#` and enable JSON payload parsing. The resulting tags can be used in a Perspective map project to display vessel movement.
+Project resources are supplied by the folder mount; Gateway configuration, installed modules, tag providers and licensing state live in the `ignition-data` named volume. A fresh Gateway still needs the MQTT Engine and namespace setup described in the guide.
 
-Use `docker compose up -d --build` to run the full stack. Removing containers with `docker compose down` preserves both the named Gateway data volume and host project files. Avoid `docker compose down -v` unless you intend to erase Gateway runtime state.
+## Verify and continue development
+
+```sh
+npm run check
+docker compose config --quiet
+```
+
+These checks validate the connection file, CLI availability and Compose configuration without starting services. Do not print resolved Compose configuration because it includes credentials. The bridge needs no build step.
+
+[AGENTS.md](AGENTS.md) supplies repository instructions. [Architecture](docs/architecture.md) explains the system, and the [development guide](docs/development.md) describes the workflow.
