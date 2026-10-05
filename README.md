@@ -2,6 +2,8 @@
 
 This repository streams BarentsWatch AIS vessel data to MQTT using the `sse-to-mqtt-node` CLI in `bridge`. Docker Compose also provides an authenticated Mosquitto broker and an Ignition Gateway with a saved Perspective ship-map project.
 
+![BarentsWatch AIS ship map demo](demo.gif)
+
 ```sh
 npm run setup
 npm start
