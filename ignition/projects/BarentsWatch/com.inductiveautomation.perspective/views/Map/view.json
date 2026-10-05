@@ -21,7 +21,7 @@
           "custom.vessales": {
             "binding": {
               "config": {
-                "expression": "now(10000)"
+                "expression": "now(1000)"
               },
               "transforms": [
                 {
@@ -48,10 +48,10 @@
         "props": {
           "init": {
             "center": {
-              "lat": 59.403583,
-              "lng": 10.58169
+              "lat": 57.77415,
+              "lng": 7.47104
             },
-            "zoom": 12
+            "zoom": 10
           },
           "layers": {
             "raster": {
